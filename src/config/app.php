@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -54,6 +56,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'asset_prefix' => env('ASSET_PREFIX', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -65,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'UTC'),
+    'timezone' => 'UTC',
 
     /*
     |--------------------------------------------------------------------------
@@ -101,7 +105,7 @@ return [
 
     'previous_keys' => [
         ...array_filter(
-            explode(',', env('APP_PREVIOUS_KEYS', ''))
+            explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
         ),
     ],
 
@@ -123,5 +127,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    'asset_prefix' => env('ASSET_PREFIX', ''),
 ];
