@@ -1,40 +1,108 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
+use App\Models\User;
 use Spatie\Activitylog\Models\Activity;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ActivityPolicy
 {
     use HandlesAuthorization;
-    
-    public function viewAny(AuthUser $authUser): bool
+
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(User $user): bool
     {
-        return $authUser->can('ViewAny:Activity');
+        return $user->can('view_any_activity');
     }
 
-    public function view(AuthUser $authUser, Activity $activity): bool
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, Activity $activity): bool
     {
-        return $authUser->can('View:Activity');
+        return $user->can('view_activity');
     }
 
-    public function create(AuthUser $authUser): bool
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(User $user): bool
     {
-        return $authUser->can('Create:Activity');
+        return $user->can('create_activity');
     }
 
-    public function update(AuthUser $authUser, Activity $activity): bool
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(User $user, Activity $activity): bool
     {
-        return $authUser->can('Update:Activity');
+        return $user->can('update_activity');
     }
 
-    public function delete(AuthUser $authUser, Activity $activity): bool
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user, Activity $activity): bool
     {
-        return $authUser->can('Delete:Activity');
+        return $user->can('delete_activity');
     }
 
+    /**
+     * Determine whether the user can bulk delete.
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->can('delete_any_activity');
+    }
+
+    /**
+     * Determine whether the user can permanently delete.
+     */
+    public function forceDelete(User $user, Activity $activity): bool
+    {
+        return $user->can('{{ ForceDelete }}');
+    }
+
+    /**
+     * Determine whether the user can permanently bulk delete.
+     */
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->can('{{ ForceDeleteAny }}');
+    }
+
+    /**
+     * Determine whether the user can restore.
+     */
+    public function restore(User $user, Activity $activity): bool
+    {
+        return $user->can('{{ Restore }}');
+    }
+
+    /**
+     * Determine whether the user can bulk restore.
+     */
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('{{ RestoreAny }}');
+    }
+
+    /**
+     * Determine whether the user can replicate.
+     */
+    public function replicate(User $user, Activity $activity): bool
+    {
+        return $user->can('{{ Replicate }}');
+    }
+
+    /**
+     * Determine whether the user can reorder.
+     */
+    public function reorder(User $user): bool
+    {
+        return $user->can('{{ Reorder }}');
+    }
 }

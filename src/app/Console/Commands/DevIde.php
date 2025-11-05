@@ -1,19 +1,17 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-final class DevIde extends Command
+class DevIde extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'project:dev';
+    protected $signature = 'dev:init';
 
     /**
      * The console command description.
@@ -25,7 +23,7 @@ final class DevIde extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): void
+    public function handle()
     {
         $this->call('ide-helper:generate');
         $this->call('ide-helper:models', [
@@ -34,5 +32,6 @@ final class DevIde extends Command
             '--reset' => true,
         ]);
         $this->call('ide-helper:meta');
+
     }
 }

@@ -1,21 +1,7 @@
 ## FilaStarter Kit
 
-A Starter Kit For Filament with most necessities
-pre-configured based on personal preferences/requirements.
-
-Preview Login:
-
-| Dark                                   | Light                                   |
-|----------------------------------------|-----------------------------------------|
-| ![](https://raw.githubusercontent.com/raugadh/fila-starter/refs/heads/master/.github/preview-login-dark.webp) | ![](https://raw.githubusercontent.com/raugadh/fila-starter/refs/heads/master/.github/preview-login-light.webp) 
-
-
-Preview DashBoard:
-
-| Dark                                       | Light                                       |
-|--------------------------------------------|---------------------------------------------|
-| ![](https://raw.githubusercontent.com/raugadh/fila-starter/refs/heads/master/.github/preview-dashboard-dark.webp) | ![](https://raw.githubusercontent.com/raugadh/fila-starter/refs/heads/master/.github/preview-dashboard-light.webp) |
-
+A Starter Kit For Filament with most basic necessities
+pre-configured based on personal preference/requirements.
 
 ### Packages
 
@@ -25,30 +11,30 @@ Preview DashBoard:
 
 #### Packages Installed/Pre-configured
 
-- Filament Packages
-    - awcodes/light-switch
-    - awcodes/overlook
-    - bezhansalleh/filament-shield
-    - diogogpinto/filament-auth-ui-enhancer
-    - dutchcodingcompany/filament-developer-logins
-    - filafly/brisk (Theme)
-    - filafly/filament-phosphor-icons
-    - gboquizosanchez/filament-log-viewer
-    - jeffgreco13/filament-breezy
-    - marcelweidum/filament-expiration-notice
-    - unknow-sk/filament-logger
+-   Filament Packages
 
-- Other Packages
-    - barryvdh/laravel-ide-helper
-    - barryvdh/laravel-debugbar
-    - laravel/boost
+    -   bezhansalleh/filament-shield
+    -   z3d0x/filament-logger
+    -   joaopaulolndev/filament-edit-profile
+    -   awcodes/overlook
+    -   awcodes/light-switch
+    -   hasnayeen/themes (Default set to Sunset)
+    -   joshembling/image-optimizer
+    -   njxqlus/filament-progressbar
+    -   ogogpinto/filament-auth-ui-enhancer
+    -   aymanalhattami/filament-slim-scrollbar
 
-### Compatibility
+-   Other Packages
 
-| Starter Kit | Filament Version |
-| ----------- | ---------------- |
-| **2.x**     | **_3.x_**        |
-| **3.x**     | **4.x**          |
+    -   barryvdh/laravel-ide-helper
+    -   barryvdh/laravel-debugbar
+    -   tightenco/duster
+    -   symfony/filesystem `for relative storage:link`
+
+-   Notes:
+
+    -   Shield configured to create only these permissions
+        `'view','view_any','create','update','delete','delete_any',`
 
 ### Installation
 
@@ -60,53 +46,88 @@ composer create-project --prefer-dist raugadh/fila-starter example-app
 
 #### Deployment
 
-- Configure Project.
-    - Update Composer Packages
-    - Add Database Credentials
-    - Add ASSET_PREFIX if deployed application in sub-folder
-    - Link Storage
+-   Configure Project.
+
+    -   Update Composer Packages
+    -   Add Database Credentials
+    -   Add ASSET_PREFIX if deployed application in sub-folder
+    -   Link Storage
 
         ```fish
         php artisan storage:link
         ```
 
-- Initialize Project
+-   Initialize Project
 
-    ```fish
-    php artisan project:init
-    ```
+    -   Runs Following in sequence
 
-- Update Permissions and Migrations
-    - Whenever new Resource , Page or migration is Added Run update command to migrate and create permissions.
+        ```yaml
+        migrate:fresh --force
+        shield:generate -all -panel=admin
+        db:seed --force
+        optimize:clear
+        ```
+
+    -   or
+
+        ```fish
+          php artisan project:init
+        ```
+
+-   Update Permissions and Migrations
+
+    -   Whenever new Resource , Page or migration is Added Run update command to migrate and create permissions.
+
+    -   Runs Following in sequence
+
+        ```yaml
+        migrate
+        shield:generate -all -panel=admin
+        optimize:clear
+        ```
+
+    -   or
+
         ```fish
         php artisan project:update
         ```
 
-- build vite assets
+-   build vite assets
 
     ```fish
-    bun install && bun run build
+    npm install && npm run build
     ```
 
-- Clear/Generate Cache
+-   Generate IDE:Helper files
 
-    ```fish
-    php artisan project:cache
+    ```yaml
+    ide-helper:generate
+    ide-helper:models --nowrite --write-eloquent-helper --reset
+    ide-helper:meta
     ```
 
-- Generate IDE Helpers
+    or
 
     ```fish
     php artisan dev:init
     ```
 
-- Configure [Laravel Boost](https://github.com/laravel/boost)
+-   Clear/Generate Cache
 
-    ```fish
-    php artisan boost:install
+    ```yaml
+    filament:optimize-clear
+    optimize:clear
+    optimize
+    filament:optimize
     ```
 
-##### Make sure to check custom console commands yourself and change them based on your requirements.
+    or
+
+    ```fish
+    php artisan project:cache
+    ```
+
+##### Make sure to check check custom console commands yourselves and change them based on your requirements.
 
 #### Enjoy
 

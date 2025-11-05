@@ -1,41 +1,28 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Providers\Filament;
 
-use App\Filament\Admin\Resources\Users\UserResource;
-use App\Filament\Admin\Widgets\LatestAccessLogs;
-use App\Models\User;
-use Awcodes\LightSwitch\Enums\Alignment;
-use Awcodes\LightSwitch\LightSwitchPlugin;
-use Awcodes\Overlook\OverlookPlugin;
-use Awcodes\Overlook\Widgets\OverlookWidget;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
-use DiogoGPinto\AuthUIEnhancer\AuthUIEnhancerPlugin;
-use DutchCodingCompany\FilamentDeveloperLogins\FilamentDeveloperLoginsPlugin;
-use Filafly\Icons\Phosphor\Enums\Phosphor;
-use Filafly\Icons\Phosphor\PhosphorIcons;
-use Filafly\Themes\Brisk\BriskTheme;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
+use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Jeffgreco13\FilamentBreezy\BreezyCore;
+use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 
-final class AdminPanelProvider extends PanelProvider
+class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
@@ -43,91 +30,86 @@ final class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->authGuard('web')
+            ->spa()
             ->login()
+            ->passwordReset()
+            ->profile(\App\Filament\Pages\Auth\EditProfile::class, isSimple: false)
             ->defaultThemeMode(ThemeMode::Light)
+            ->font('Montserrat')
             ->colors([
                 'primary' => Color::Blue,
             ])
-            ->maxContentWidth('7xl')
+            ->maxContentWidth(MaxWidth::SevenExtraLarge)
             ->sidebarCollapsibleOnDesktop()
-            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
-            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
+            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
+            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->pages([
-                //
+                Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
+            ->discoverClusters(in: app_path('Filament/Admin/Clusters'), for: 'App\\Filament\\Admin\\Clusters')
+            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                OverlookWidget::class,
-                LatestAccessLogs::class,
+                \Awcodes\Overlook\Widgets\OverlookWidget::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->collapsed(true)
-                    ->label('General'),
-                NavigationGroup::make()
-                    ->collapsed(true)
                     ->label('Administration'),
             ])
+            ->userMenuItems([
+                'profile' => MenuItem::make()
+                    ->label(fn () => auth()->user()->name)
+                    ->url(fn (): string => EditProfilePage::getUrl())
+                    ->icon('heroicon-m-user-circle'),
+                // 'profile' => \Filament\Navigation\MenuItem::make()
+                //     ->label(fn () => auth()->user()->name)
+                //     ->icon('heroicon-m-user-circle'),
+            ])
             ->plugins([
-                BriskTheme::make(),
-                PhosphorIcons::make()->duotone(),
-                LightSwitchPlugin::make()
-                    ->position(Alignment::BottomCenter)
-                    ->enabledOn([
-                        'auth.login',
-                    ]),
-                AuthUIEnhancerPlugin::make()
-                    ->showEmptyPanelOnMobile(false)
-                    ->formPanelPosition('right')
-                    ->formPanelWidth('40%')
-                    ->emptyPanelBackgroundImageOpacity('70%')
-                    ->emptyPanelBackgroundImageUrl('https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'),
-                BreezyCore::make()
-                    ->myProfile(
-                        hasAvatars: true,
-                        slug: 'profile',
-                        userMenuLabel: 'Profile',
-                    )
-                    ->enableBrowserSessions(),
-                OverlookPlugin::make()
-                    ->sort(2)
-                    ->columns([
-                        'default' => 4,
-                        'sm' => 2,
-                        'lg' => 4,
-                        'xl' => 6,
-                    ])
-                    ->includes([
-                        UserResource::class,
-                    ]),
-                FilamentShieldPlugin::make()
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
                     ->gridColumns([
                         'default' => 2,
+                        'lg' => 3,
                     ])
                     ->sectionColumnSpan(1)
                     ->checkboxListColumns([
                         'default' => 2,
+                        'lg' => 3,
                     ])
                     ->resourceCheckboxListColumns([
                         'default' => 2,
-                    ])
-                    ->navigationLabel('Roles & Permissions')
-                    ->navigationGroup('Administration')
-                    ->navigationSort(2)
-                    ->navigationIcon(Phosphor::ShieldCheckDuotone),
-                FilamentLogViewerPlugin::make()
-                    ->navigationGroup('Administration')
-                    ->navigationSort(4)
-                    ->navigationIcon(Phosphor::FileArchiveDuotone),
-                FilamentDeveloperLoginsPlugin::make()
-                    ->enabled(app()->environment('local'))
-                    ->switchable(true)
-                    ->users(fn () => User::pluck('email', 'name')->toArray()),
+                        'lg' => 3,
+                    ]),
+                \Hasnayeen\Themes\ThemesPlugin::make(),
+                \Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin::make()->color('#29b'),
+                \DiogoGPinto\AuthUIEnhancer\AuthUIEnhancerPlugin::make()
+                    ->showEmptyPanelOnMobile(false)
+                    ->formPanelPosition('right')
+                    ->formPanelWidth('40%')
+                    ->emptyPanelBackgroundImageOpacity('70%')
+                    ->emptyPanelBackgroundImageUrl('https://picsum.photos/seed/picsum/1260/750.webp/?blur=1'),
+                \Awcodes\LightSwitch\LightSwitchPlugin::make()
+                    ->position(\Awcodes\LightSwitch\Enums\Alignment::BottomCenter)
+                    ->enabledOn([
+                        'auth.login',
+                        'auth.password',
+                    ]),
+                \Awcodes\Overlook\OverlookPlugin::make()
+                    ->includes([
+                        \App\Filament\Admin\Resources\UserResource::class,
+                    ]),
+                \Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin::make()
+                    ->slug('my-profile')
+                    ->setTitle('My Profile')
+                    ->shouldRegisterNavigation(false)
+                    ->shouldShowDeleteAccountForm(false)
+                    ->shouldShowSanctumTokens(false)
+                    ->shouldShowBrowserSessionsForm()
+                    ->shouldShowAvatarForm(),
             ])
             ->resources([
                 config('filament-logger.activity_resource'),
             ])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -138,10 +120,10 @@ final class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \Hasnayeen\Themes\Http\Middleware\SetTheme::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ])
-            ->viteTheme('resources/css/filament/admin/theme.css');
+            ]);
     }
 }

@@ -1,11 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Providers;
 
 use App\Policies\ActivityPolicy;
-use Filament\Livewire\Notifications;
+use Filament\Actions\MountableAction;
+use Filament\Notifications\Livewire\Notifications;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
@@ -15,7 +14,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
 
-final class AppServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
@@ -34,11 +33,14 @@ final class AppServiceProvider extends ServiceProvider
         Page::formActionsAlignment(Alignment::Right);
         Notifications::alignment(Alignment::End);
         Notifications::verticalAlignment(VerticalAlignment::End);
-        Page::$reportValidationErrorUsing = function (ValidationException $exception): void {
+        Page::$reportValidationErrorUsing = function (ValidationException $exception) {
             Notification::make()
                 ->title($exception->getMessage())
                 ->danger()
                 ->send();
         };
+        MountableAction::configureUsing(function (MountableAction $action) {
+            $action->modalFooterActionsAlignment(Alignment::Right);
+        });
     }
 }
