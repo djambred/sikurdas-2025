@@ -6,10 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Faculty extends Model
 {
-    protected $guarded = ['id'];
-
-    public function university()
-    {
-        return $this->belongsTo(University::class);
-    }
+    //
 }
