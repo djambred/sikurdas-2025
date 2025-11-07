@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('references', function (Blueprint $table) {
             $table->id();
             $table->string('code');
-            $table->longText('description')->nullable();
+            $table->text('competency_realm')->nullable();
+            $table->text('body_of_knowledge')->nullable();
+            $table->text('main_reference')->nullable();
             $table->timestamps();
         });
     }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('science_clusters', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
-            $table->longText('description')->nullable();
+            $table->string('code')->unique();
             $table->timestamps();
         });
     }

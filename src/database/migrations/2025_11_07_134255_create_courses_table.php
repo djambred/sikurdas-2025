@@ -18,14 +18,15 @@ return new class extends Migration
     {
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
-            $table->string('title');
-            $table->longText('description');
-            $table->foreignIdFor(Term::class);
-            $table->foreignIdFor(Category::class);
-            $table->foreignIdFor(AssessmentCourse::class);
-            $table->foreignIdFor(LearningForm::class);
-            $table->foreignIdFor(LearningMethod::class);
+            $table->string('kode')->unique();
+            $table->string('nama');
+            $table->integer('sks')->nullable();
+            $table->integer('semester')->nullable();
+            // $table->foreignIdFor(Term::class);
+            // $table->foreignIdFor(Category::class);
+            // $table->foreignIdFor(AssessmentCourse::class);
+            // $table->foreignIdFor(LearningForm::class);
+            // $table->foreignIdFor(LearningMethod::class);
             $table->timestamps();
         });
     }

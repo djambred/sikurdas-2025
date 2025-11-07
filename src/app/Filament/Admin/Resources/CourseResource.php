@@ -18,12 +18,32 @@ class CourseResource extends Resource
     protected static ?string $model = Course::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'MASTERData';
+    protected static ?string $pluralModelLabel = 'Mata Kuliah';
+    protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?int $navigationSort = -1;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                //
+                Forms\Components\TextInput::make('kode')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('nama')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('sks')
+                    ->numeric()
+                    ->default(null),
+                Forms\Components\TextInput::make('semester')
+                    ->numeric()
+                    ->default(null),
             ]);
     }
 
@@ -31,7 +51,24 @@ class CourseResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('kode')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('nama')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('sks')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('semester')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class LearningForm extends Model
 {
-    //
+    protected $guarded = ['id'];
 }

@@ -15,10 +15,9 @@ return new class extends Migration
     {
         Schema::create('lectures', function (Blueprint $table) {
             $table->id();
-            $table->string('NIDN');
             $table->string('name');
-            $table->foreignIdFor(EducationLevel::class);
-            $table->foreignIdFor(ScienceCluster::class);
+            //$table->foreignIdFor(EducationLevel::class)->nullable();
+            //$table->foreignIdFor(ScienceCluster::class)->nullable();
             $table->timestamps();
         });
     }

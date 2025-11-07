@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('course_learning_outcomes', function (Blueprint $table) {
             $table->id();
             $table->string('code');
-            $table->longText('description')->nullable();
+            $table->string('description')->nullable();
+            $table->string('detail')->nullable();
             $table->timestamps();
         });
     }

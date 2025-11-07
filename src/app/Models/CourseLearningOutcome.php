@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class CourseLearningOutcome extends Model
 {
-    //
+    protected $guarded = ['id'];
 }

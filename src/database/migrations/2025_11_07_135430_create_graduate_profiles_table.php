@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('code');
             $table->longText('description')->nullable();
+            $table->string('profesi')->nullable();
             $table->timestamps();
         });
     }
