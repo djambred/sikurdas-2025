@@ -47,8 +47,11 @@
         $courseMap[$c['id']] = $c;
     }
 
-    // Rekursif render function (mengembalikan HTML). Gunakan referensi untuk rekursi.
-    $renderPrereq = function($courseId, array &$courseMap, callable &$renderPrereq, $visited = []) {
+    // Deklarasi null dahulu supaya closure bisa mereferensi dirinya sendiri
+    $renderPrereq = null;
+
+    // Rekursif render function (mengembalikan HTML). Gunakan use (&$renderPrereq) untuk rekursi.
+    $renderPrereq = function($courseId, array &$courseMap, $visited = []) use (&$renderPrereq) {
         if (!isset($courseMap[$courseId])) {
             return '<em>(prasyarat tidak ditemukan)</em>';
         }
@@ -62,16 +65,16 @@
 
         // Jika tidak ada prasyarat, tampilkan node tunggal
         if (empty($course['prerequisites'])) {
-            return '<span class="node-label">' . e($course['kode']) . ' — ' . e($course['nama']) . '</span>';
+            return '<span class="node-label">' . e($course['kode']) . ' &mdash; ' . e($course['nama']) . '</span>';
         }
 
         $out = '<div class="node-with-children">';
-        $out .= '<div class="node-label root">' . e($course['kode']) . ' — ' . e($course['nama']) . '</div>';
+        $out .= '<div class="node-label root">' . e($course['kode']) . ' &mdash; ' . e($course['nama']) . '</div>';
         $out .= '<ul class="tree">';
         foreach ($course['prerequisites'] as $pid) {
             $out .= '<li>';
             if (isset($courseMap[$pid])) {
-                $out .= $renderPrereq($pid, $courseMap, $renderPrereq, $visited);
+                $out .= $renderPrereq($pid, $courseMap, $visited);
             } else {
                 $out .= '<span class="node-label missing">(id:' . e($pid) . ') tidak ditemukan</span>';
             }
@@ -123,9 +126,6 @@
         .card.root-page { page-break-after: always; }
         .card { page-break-inside: avoid; -webkit-region-break-inside: avoid; }
     }
-    body, .card, .node-label {
-    font-family: "DejaVu Sans", "Arial", sans-serif;
-}
 
     /* Tree styling */
     .tree { list-style: none; margin: 0; padding-left: 1.25rem; position: relative; }
@@ -151,7 +151,6 @@
     <h3 style="margin:0 0 .5rem 0;">{{ $title }}</h3>
     <p class="meta">Arah panah (&rarr;) pada pohon menunjukkan prasyarat: prasyarat &rarr; mata kuliah tujuan.</p>
 
-
     {{-- Kontrol: unduh PDF / preview --}}
     <div class="controls">
         {{-- pastikan route sesuai di aplikasi Anda --}}
@@ -169,6 +168,7 @@
         <a href="{{ route('course-tree.preview') }}" target="_blank" class="btn btn-preview">🔍 Preview HTML</a>
     </div>
 
+
     {{-- Jika tidak ada data, tampilkan pesan --}}
     @if($totalCourses === 0)
         <div style="padding:1rem; background:#fffbeb; border:1px solid #fef3c7; border-radius:6px; color:#92400e;">
@@ -182,7 +182,7 @@
                     <h4>{{ $root['kode'] }} — {{ $root['nama'] }}</h4>
                     <div class="meta">Semester: {{ $root['semester'] ?? '-' }} &middot; SKS: {{ $root['sks'] ?? '-' }}</div>
                     <div class="tree-wrapper">
-                        {!! $renderPrereq($root['id'], $courseMap, $renderPrereq, []) !!}
+                        {!! $renderPrereq($root['id'], $courseMap, []) !!}
                     </div>
                 </div>
             @endforeach
