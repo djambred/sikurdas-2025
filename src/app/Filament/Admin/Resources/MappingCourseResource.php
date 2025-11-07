@@ -23,6 +23,8 @@ class MappingCourseResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Mapping Mata Kuliah';
     protected static ?string $pluralModelLabel = 'Mapping Mata Kuliah';
+    protected static ?string $navigationGroup = 'Akademik';
+    protected static ?int $navigationSort = -7;
 
     /**
      * Optimized query dengan eager loading untuk menghindari N+1 problem

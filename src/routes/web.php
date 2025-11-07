@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use App\Http\Controllers\CourseTreeExportController;
+use App\Http\Controllers\RpsExportController;
+use App\Models\Rps;
+
 
 /* NOTE: Do Not Remove
 / Livewire asset handling if using sub folder in domain
@@ -26,3 +29,11 @@ Route::get('/course-tree/pdf', [CourseTreeExportController::class, 'exportPdf'])
 // 👁️ Preview HTML (opsional, untuk tes di browser)
 Route::get('/course-tree/preview', [CourseTreeExportController::class, 'preview'])
     ->name('course-tree.preview');
+
+
+
+Route::get('/rps/{rps}/preview', function (Rps $rps) {
+    return view('rps.templates.standard', compact('rps'));
+})->name('rps.preview');
+
+Route::get('/rps/{rps}/export', [RpsExportController::class, 'export'])->name('rps.export');
