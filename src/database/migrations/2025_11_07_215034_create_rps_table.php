@@ -18,10 +18,30 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
 
             // basic metadata
-            $table->string('kode')->nullable();
-            $table->string('nama')->nullable();
-            $table->integer('sks')->nullable();
-            $table->integer('semester')->nullable();
+            $table->string('kode');
+            $table->string('nama');
+            $table->integer('sks');
+            $table->integer('semester');
+
+            // Tambahan field untuk otorisasi dan informasi lain
+            $table->string('penyusun'); // sekarang menyimpan nama, bukan ID
+            $table->string('koordinator_rps')->nullable();
+            $table->string('ketua_prodi')->nullable();
+            $table->string('dosen_pengampu')->nullable();
+            $table->date('tanggal_penyusunan');
+            $table->integer('revisi')->default(1);
+
+            // Deskripsi
+            $table->text('deskripsi_singkat')->nullable();
+
+            // content stored as JSON (easiest integration with Filament Repeater)
+            $table->json('weekly_plan')->nullable();
+            $table->json('assessment')->nullable();
+            $table->json('references')->nullable();
+
+            // Field untuk multiple selection CPMK dan Sub-CPMK
+            $table->json('existing_cpmks')->nullable();
+            $table->json('existing_sub_cpmks')->nullable();
 
             // optional academic info
             $table->string('academic_year')->nullable();
@@ -30,16 +50,6 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->integer('version')->default(1);
 
-            // content stored as JSON (easiest integration with Filament Repeater)
-            $table->json('weekly_plan')->nullable();
-            $table->json('assessment')->nullable();
-            $table->json('references')->nullable();
-
-            // free text
-            $table->text('deskripsi_singkat')->nullable();
-            $table->string('penyusun')->nullable();
-            $table->date('tanggal_penyusunan')->nullable();
-
             // misc
             $table->text('approval_notes')->nullable();
             $table->json('meta')->nullable();
@@ -47,6 +57,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['major_id', 'course_id', 'status']);
+            $table->index(['kode', 'semester']);
         });
     }
 

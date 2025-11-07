@@ -8,12 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Rps extends Model
 {
-    protected $fillable = [
-        'major_id', 'course_id', 'kode', 'nama', 'sks', 'semester',
-        'deskripsi_singkat', 'penyusun', 'tanggal_penyusunan', 'revisi',
-        'weekly_plan', 'assessment', 'references', 'existing_cpmks', 'existing_sub_cpmks',
-        'koordinator_rps', 'ketua_prodi', 'dosen_pengampu' // Tambahkan field baru
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'weekly_plan' => 'array',

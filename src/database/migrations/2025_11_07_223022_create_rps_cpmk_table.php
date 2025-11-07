@@ -6,22 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('rps_cpmk', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rps_id')->constrained()->onDelete('cascade');
-            $table->foreignId('course_learning_outcome_id')->constrained()->onDelete('cascade');
+            $table->foreignId('rps_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('course_learning_outcome_id')->constrained()->cascadeOnDelete();
+            $table->integer('order')->default(1);
             $table->timestamps();
+
+            $table->unique(['rps_id', 'course_learning_outcome_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('rps_cpmk');
