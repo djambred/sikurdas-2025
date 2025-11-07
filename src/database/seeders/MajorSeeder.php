@@ -25,5 +25,19 @@ class MajorSeeder extends Seeder
 4. Menghasilkan penelitian serta penerapan dan inovasi teknologi informasi tepat guna dalam rangka terciptanya kemampuan individu, organisasi, dan masyarakat berbasis pengetahuan dan teknologi.',
             'faculty_id' => 1,
         ]);
+
+        Major::firstOrCreate([
+            'name' => 'Teknik Informatika',
+            'vission' => 'Menjadi Program Studi Teknik Informatika yang mampu menghasilkan lulusan berwawasan global, berbasis intelektualitas, kreatifitas, dan kewirausahaan pada tahun 2033 dengan keahlian pengembangan solusi digital adaptif untuk mendukung  akselerasi di berbagai konteks organisasi.',
+            'mission' => '1. Menyelenggarakan proses pendidikan yang menghasilkan lulusan sarjana Teknik Informatika yang bertakwa kepada Tuhan Yang Maha Esa, berjiwa technopreneur, serta memiliki kemampuan akademik dan teknis dalam membangun solusi digital adaptif yang mendukung transformasi menuju ekonomi digital.<br>
+2. Melaksanakan penelitian terapan dan inovatif dalam bidang informatika untuk mengembangkan dan memperkaya IPTEKS, dengan fokus pada pengembangan solusi yang bermanfaat bagi ekosistem digital di berbagai konteks organisasi.<br>
+3. Menyelenggarakan pengabdian dan pemberdayaan masyarakat berbasis informatika secara berkelanjutan yang memberikan dampak langsung pada penguatan kapasitas digital dalam organisasi.',
+            'objectives' => '1. Menghasilkan lulusan Teknik Informatika yang menguasai bidang rekayasa perangkat lunak, jaringan komputer, basis data, kecerdasan buatan, dan pemrograman untuk memberikan solusi sistem berbasis teknologi informasi yang adaptif terhadap perkembangan global.<br>
+2. Membentuk lulusan yang mampu menjadi wirausahawan teknologi (technopreneur) yang inovatif, kompeten, dan berdaya saing dalam menghadapi tantangan ekonomi digital, khususnya di sektor SME’s.<br>
+3. Memberikan kontribusi melalui riset dan publikasi ilmiah dalam menyelesaikan permasalahan teknologi informasi pada tingkat nasional dan internasional.<br>
+4. Membangun lulusan dengan kompetensi aplikatif dalam merancang, mengimplementasikan, dan mengembangkan sistem teknologi informasi pada bidang Artificial Intelligence, Computer Networking, Database Systems, Programming, dan Software Engineering.<br>
+5. Menjadi program studi yang proaktif dalam menjawab kebutuhan pengguna lulusan, baik di industri maupun di bidang kewirausahaan digital.',
+            'faculty_id' => 1,
+        ]);
     }
 }

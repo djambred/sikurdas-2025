@@ -14,7 +14,6 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         Category::firstOrCreate(['name' => 'Wajib']);
-        Category::firstOrCreate(['name' => 'PraSyarat']);
         Category::firstOrCreate(['name' => 'Pilihan']);
     }
 }

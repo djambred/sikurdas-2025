@@ -15,7 +15,7 @@ class CoursePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_course');
+        return $user->can('view_any_mapping::course');
     }
 
     /**
@@ -23,7 +23,7 @@ class CoursePolicy
      */
     public function view(User $user, Course $course): bool
     {
-        return $user->can('view_course');
+        return $user->can('view_mapping::course');
     }
 
     /**
@@ -31,7 +31,7 @@ class CoursePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_course');
+        return $user->can('create_mapping::course');
     }
 
     /**
@@ -39,7 +39,7 @@ class CoursePolicy
      */
     public function update(User $user, Course $course): bool
     {
-        return $user->can('update_course');
+        return $user->can('update_mapping::course');
     }
 
     /**
@@ -47,7 +47,7 @@ class CoursePolicy
      */
     public function delete(User $user, Course $course): bool
     {
-        return $user->can('delete_course');
+        return $user->can('delete_mapping::course');
     }
 
     /**
@@ -55,7 +55,7 @@ class CoursePolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_course');
+        return $user->can('delete_any_mapping::course');
     }
 
     /**
