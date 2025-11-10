@@ -4,6 +4,7 @@ use App\Models\AssessmentCourse;
 use App\Models\Category;
 use App\Models\LearningForm;
 use App\Models\LearningMethod;
+use App\Models\Major;
 use App\Models\Term;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -22,12 +23,10 @@ return new class extends Migration
             $table->string('nama');
             $table->integer('sks')->nullable();
             $table->integer('semester')->nullable();
-            // $table->foreignIdFor(Term::class);
-            // $table->foreignIdFor(Category::class);
-            // $table->foreignIdFor(AssessmentCourse::class);
-            // $table->foreignIdFor(LearningForm::class);
-            // $table->foreignIdFor(LearningMethod::class);
+            // FK Lookup (Optional, tergantung kebutuhan Anda)
+            $table->foreignIdFor(Term::class)->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
+
         });
     }
 

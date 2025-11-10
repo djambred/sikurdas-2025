@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Course;
 use App\Models\EducationLevel;
 use App\Models\Faculty;
 use App\Models\LearningForm;
 use App\Models\LearningOutcome;
+use App\Models\LearningOutcomeIndicator;
 use App\Models\Lecture;
 use App\Models\Reference;
 use App\Models\Term;
@@ -42,6 +44,8 @@ class DatabaseSeeder extends Seeder
             LearningMethodSeeder::class,
             LectureSeeder::class,
             CourseSeeder::class,
+            LearningOutcomeIndicatorSeeder::class,
+            CourseMappingSeeder::class,
         ]);
 
         $user = \App\Models\User::factory()->create([

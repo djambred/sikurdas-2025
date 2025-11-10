@@ -8,12 +8,13 @@ use App\Filament\Admin\Resources\RpsResource\RelationManagers\SubCpmksRelationMa
 use App\Models\Rps;
 use App\Models\Major;
 use App\Models\Course;
-use App\Models\CourseLearningOutcome;
 use App\Models\Lecture;
+use App\Models\CourseLearningOutcome;
 use App\Models\TopicLearningOutcome;
+use App\Models\LearningMethod;
+use App\Models\AssessmentCourse;
 
 use Filament\Forms\Form;
-use Filament\Forms\Components\Card;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
@@ -21,11 +22,9 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Get;
 
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
@@ -53,7 +52,7 @@ class RpsResource extends Resource
                     Grid::make(3)->schema([
                         Select::make('major_id')
                             ->label('Program Studi')
-                            ->options(fn() => Major::orderBy('name')->pluck('name','id')->toArray())
+                            ->options(fn() => Major::orderBy('name')->pluck('name', 'id')->toArray())
                             ->searchable()
                             ->reactive()
                             ->required()
@@ -66,7 +65,7 @@ class RpsResource extends Resource
                                 return $majorId
                                     ? Course::where('major_id', $majorId)
                                         ->orderBy('nama')
-                                        ->pluck('nama','id')
+                                        ->pluck('nama', 'id')
                                         ->toArray()
                                     : [];
                             })
@@ -81,26 +80,27 @@ class RpsResource extends Resource
                                         $set('nama', $course->nama);
                                         $set('sks', $course->sks);
                                         $set('semester', $course->semester);
-                                        $set('deskripsi_singkat', $course->deskripsi);
+                                        $set('deskripsi_singkat', $course->deskripsi_singkat ?? $course->nama);
                                     }
                                 }
                             })
                             ->columnSpan(2),
                     ]),
 
+                    // Detail Mata Kuliah (Disabled di display, tapi data AKAN disimpan ke database)
                     Grid::make(4)->schema([
                         TextInput::make('kode')
                             ->label('Kode MK')
                             ->required()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(true)
                             ->columnSpan(1),
 
                         TextInput::make('nama')
                             ->label('Nama Mata Kuliah')
                             ->required()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(true)
                             ->columnSpan(3),
                     ]),
 
@@ -110,7 +110,7 @@ class RpsResource extends Resource
                             ->numeric()
                             ->required()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(true)
                             ->columnSpan(1),
 
                         TextInput::make('semester')
@@ -118,33 +118,45 @@ class RpsResource extends Resource
                             ->numeric()
                             ->required()
                             ->disabled()
-                            ->dehydrated()
+                            ->dehydrated(true)
                             ->columnSpan(1),
 
-                        // Ganti Select dengan TextInput untuk nama penyusun
-                        TextInput::make('penyusun')
+                        // Penyusun RPS
+                        Select::make('penyusun_id')
                             ->label('Penyusun')
+                            ->relationship('penyusun', 'name')
+                            ->searchable()
+                            ->preload()
                             ->required()
-                            ->columnSpan(2)
-                            ->placeholder('Masukkan nama lengkap penyusun'),
+                            ->columnSpan(2),
                     ]),
 
-                    // Tambahkan field untuk nama koordinator dan ketua prodi
+                    // Otorisasi
                     Grid::make(3)->schema([
-                        TextInput::make('koordinator_rps')
+                        Select::make('koordinator_rps_id')
                             ->label('Koordinator RPS')
+                            ->relationship('koordinator', 'name')
+                            ->searchable()
+                            ->preload()
                             ->columnSpan(1)
-                            ->placeholder('Nama Koordinator RPS'),
+                            ->nullable(),
 
-                        TextInput::make('ketua_prodi')
+                        Select::make('ketua_prodi_id')
                             ->label('Ketua Program Studi')
+                            ->relationship('ketuaProdi', 'name')
+                            ->searchable()
+                            ->preload()
                             ->columnSpan(1)
-                            ->placeholder('Nama Ketua Prodi'),
+                            ->nullable(),
 
-                        TextInput::make('dosen_pengampu')
+                        Select::make('lectures')
+                            ->relationship('lectures', 'name')
                             ->label('Dosen Pengampu')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
                             ->columnSpan(1)
-                            ->placeholder('Nama Dosen Pengampu'),
+                            ->nullable(),
                     ]),
 
                     Textarea::make('deskripsi_singkat')
@@ -153,36 +165,35 @@ class RpsResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
-            // ... (bagian CPMK, Sub-CPMK, Rencana Pembelajaran Mingguan, dll tetap sama)
+            // --- CAPAIAN PEMBELAJARAN ---
             Section::make('Capaian Pembelajaran')
                 ->description('Pilih CPMK dan Sub-CPMK yang sudah ada')
                 ->schema([
-                    CheckboxList::make('existing_cpmks')
-                        ->label('Pilih CPMK yang Sudah Ada')
-                        ->options(fn() => CourseLearningOutcome::orderBy('code')->get()->mapWithKeys(function ($item) {
-                            return [$item->id => "{$item->code} - {$item->description}"];
-                        })->toArray())
+                    CheckboxList::make('cpmks')
+                        ->label('Pilih CPMK')
+                        ->relationship('cpmks', 'code')
+                        ->getOptionLabelFromRecordUsing(fn (CourseLearningOutcome $record) => "{$record->code} - {$record->description}")
                         ->columns(2)
                         ->gridDirection('row')
-                        ->helperText('Pilih CPMK dari daftar yang sudah ada')
+                        ->helperText('Pilih CPMK dari daftar yang sudah ada. Filament akan menyimpan relasi ini secara otomatis.')
                         ->columnSpanFull(),
 
-                    CheckboxList::make('existing_sub_cpmks')
-                        ->label('Pilih Sub-CPMK yang Sudah Ada')
-                        ->options(fn() => TopicLearningOutcome::orderBy('code')->get()->mapWithKeys(function ($item) {
-                            return [$item->id => "{$item->code} - {$item->detail}"];
-                        })->toArray())
+                    CheckboxList::make('subCpmks')
+                        ->label('Pilih Sub-CPMK')
+                        ->relationship('subCpmks', 'code')
+                        ->getOptionLabelFromRecordUsing(fn (TopicLearningOutcome $record) => "{$record->code} - {$record->detail}")
                         ->columns(2)
                         ->gridDirection('row')
-                        ->helperText('Pilih Sub-CPMK dari daftar yang sudah ada')
+                        ->helperText('Pilih Sub-CPMK dari daftar yang sudah ada. Filament akan menyimpan relasi ini secara otomatis.')
                         ->columnSpanFull(),
 
                     Placeholder::make('relation_manager_note')
-                        ->content('Catatan: CPMK dan Sub-CPMK yang dipilih di atas akan ditambahkan ke Relation Managers di bawah. Anda juga dapat menambah/mengelola CPMK dan Sub-CPMK langsung melalui Relation Managers.')
+                        ->content('Catatan: Pilihan di atas akan disinkronkan saat disimpan, dan dapat dikelola lebih lanjut melalui Relation Managers.')
                         ->columnSpanFull()
                         ->extraAttributes(['class' => 'text-sm text-gray-600 bg-blue-50 p-3 rounded']),
                 ]),
 
+            // --- RENCANA PEMBELAJARAN MINGGUAN ---
             Section::make('Rencana Pembelajaran Mingguan')
                 ->schema([
                     Repeater::make('weekly_plan')
@@ -200,40 +211,75 @@ class RpsResource extends Resource
                                     ->required()
                                     ->columnSpan(2),
 
-                                TextInput::make('method')
+                                Select::make('method')
                                     ->label('Metode Pembelajaran')
+                                    ->options(LearningMethod::all()->pluck('name', 'name'))
+                                    ->multiple()
+                                    ->searchable()
                                     ->columnSpan(1),
 
-                                TextInput::make('assessment')
+                                Select::make('assessment_method')
                                     ->label('Penilaian')
+                                    ->options(AssessmentCourse::all()->pluck('name', 'name'))
+                                    ->multiple()
+                                    ->searchable()
                                     ->columnSpan(1),
                             ]),
 
                             Textarea::make('learning_outcomes')
-                                ->label('Capaian Pembelajaran')
+                                ->label('Capaian Pembelajaran (Sub-CPMK)')
                                 ->rows(2)
                                 ->columnSpanFull()
                                 ->helperText('Tulis capaian pembelajaran untuk minggu ini'),
 
+                            Grid::make(3)->schema([
+                                Select::make('indicator_ik')
+                                    ->label('Indikator Kinerja (IK)')
+                                    ->options(fn () => \App\Models\LearningOutcomeIndicator::pluck('code', 'id')->toArray())
+                                    ->multiple()
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpan(2)
+                                    ->helperText('Pilih indikator kinerja dari CPL'),
+
+                                TextInput::make('bobot')
+                                    ->label('Bobot (%)')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->columnSpan(1)
+                                    ->suffix('%'),
+                            ]),
+
+                            Textarea::make('student_task')
+                                ->label('Rencana Tugas Mahasiswa (RTM)')
+                                ->rows(2)
+                                ->columnSpanFull()
+                                ->helperText('Jelaskan tugas yang akan diberikan kepada mahasiswa'),
+
                             TextInput::make('references')
                                 ->label('Referensi')
-                                ->columnSpanFull(),
+                                ->columnSpanFull()
+                                ->helperText('Contoh: Bab 1-3 dari buku referensi'),
                         ])
                         ->columns(1)
                         ->createItemButtonLabel('Tambah Minggu')
                         ->collapsible()
-                        ->itemLabel(fn (array $state): ?string => 'Minggu ' . ($state['week'] ?? 'Baru'))
+                        ->itemLabel(fn (array $state): string => 'Minggu ' . ($state['week'] ?? 'Baru'))
                         ->defaultItems(1),
                 ]),
 
+            // --- KOMPONEN PENILAIAN ---
             Section::make('Komponen Penilaian')
                 ->schema([
                     Repeater::make('assessment')
                         ->label('Komponen Penilaian')
                         ->schema([
                             Grid::make(3)->schema([
-                                TextInput::make('name')
+                                Select::make('component_name')
                                     ->label('Nama Komponen')
+                                    ->options(AssessmentCourse::all()->pluck('name', 'name'))
+                                    ->searchable()
                                     ->required()
                                     ->columnSpan(2),
 
@@ -260,10 +306,11 @@ class RpsResource extends Resource
                         ])
                         ->createItemButtonLabel('Tambah Komponen')
                         ->collapsible()
-                        ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'Komponen Baru')
+                        ->itemLabel(fn (array $state): string => $state['component_name'] ?? 'Komponen Baru')
                         ->defaultItems(1),
                 ]),
 
+            // --- REFERENSI ---
             Section::make('Referensi')
                 ->schema([
                     Repeater::make('references')
@@ -307,10 +354,11 @@ class RpsResource extends Resource
                         ])
                         ->createItemButtonLabel('Tambah Referensi')
                         ->collapsible()
-                        ->itemLabel(fn (array $state): ?string => $state['title'] ?? 'Referensi Baru')
+                        ->itemLabel(fn (array $state): string => $state['title'] ?? 'Referensi Baru')
                         ->defaultItems(1),
                 ]),
 
+            // --- INFORMASI PENYUSUNAN ---
             Section::make('Informasi Penyusunan')
                 ->schema([
                     Grid::make(2)->schema([
@@ -343,7 +391,7 @@ class RpsResource extends Resource
                     ->sortable()
                     ->searchable()
                     ->limit(30)
-                    ->tooltip(fn (Rps $record): string => $record->nama),
+                    ->tooltip(fn (Rps $record): string => (string) $record->nama),
 
                 TextColumn::make('kode')
                     ->label('Kode')
@@ -355,22 +403,33 @@ class RpsResource extends Resource
                     ->sortable()
                     ->alignCenter(),
 
-                // Perbaikan: Tampilkan nama penyusun langsung (bukan ID)
-                TextColumn::make('penyusun')
+                TextColumn::make('penyusun.name')
                     ->label('Penyusun')
+                    ->sortable()
                     ->searchable()
-                    ->limit(20)
-                    ->tooltip(fn (Rps $record): string => $record->penyusun ?? '-'),
+                    ->limit(20),
+
+                TextColumn::make('koordinator.name')
+                    ->label('Koordinator RPS')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('ketuaProdi.name')
+                    ->label('Ketua Prodi')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('lectures.name')
+                    ->label('Dosen Pengampu')
+                    ->listWithLineBreaks()
+                    ->limitList(2)
+                    ->expandableLimitedList()
+                    ->toggleable(),
 
                 TextColumn::make('cpmks_count')
                     ->label('Jumlah CPMK')
                     ->counts('cpmks')
-                    ->alignCenter()
-                    ->sortable(),
-
-                TextColumn::make('subCpmks_count')
-                    ->label('Jumlah Sub-CPMK')
-                    ->counts('subCpmks')
                     ->alignCenter()
                     ->sortable(),
 
@@ -404,6 +463,12 @@ class RpsResource extends Resource
                         '7' => 'Semester 7',
                         '8' => 'Semester 8',
                     ]),
+
+                SelectFilter::make('lectures')
+                    ->label('Dosen Pengampu')
+                    ->relationship('lectures', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 EditAction::make()->icon(null),
@@ -426,9 +491,7 @@ class RpsResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
-            ->emptyStateHeading('Belum ada RPS')
-            ->emptyStateDescription('Klik tombol di bawah untuk membuat RPS pertama Anda.')
-            ->emptyStateIcon('heroicon-o-document-text');
+            ->emptyStateHeading('Belum ada RPS');
     }
 
     public static function getRelations(): array

@@ -19,20 +19,16 @@ use Filament\Notifications\Notification;
 class MappingCourseResource extends Resource
 {
     protected static ?string $model = Course::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Mapping Mata Kuliah';
     protected static ?string $pluralModelLabel = 'Mapping Mata Kuliah';
     protected static ?string $navigationGroup = 'Akademik';
     protected static ?int $navigationSort = -7;
 
-    /**
-     * Optimized query dengan eager loading untuk menghindari N+1 problem
-     */
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return parent::getEloquentQuery()
-            ->with(['major', 'category', 'prerequisites'])
+            ->with(['major', 'category', 'prerequisites', 'pl', 'cpl', 'ik', 'cpmk'])
             ->orderBy('semester', 'asc');
     }
 
@@ -43,12 +39,7 @@ class MappingCourseResource extends Resource
                 ->label('Program Studi')
                 ->relationship('major', 'name')
                 ->options(Major::pluck('name', 'id'))
-                ->disabled(fn (string $operation): bool => $operation !== 'create')
-                ->helperText(fn (string $operation): ?string =>
-                    $operation === 'edit'
-                        ? 'Program studi tidak dapat diubah setelah dibuat'
-                        : null
-                )
+                ->disabled(fn(string $operation) => $operation !== 'create')
                 ->required(),
 
             Forms\Components\TextInput::make('nama')
@@ -63,34 +54,14 @@ class MappingCourseResource extends Resource
                 ->required(),
 
             Forms\Components\MultiSelect::make('prerequisites')
-                ->label('Prasyarat (pilih satu/lebih)')
-                ->relationship('prerequisites', 'nama', function ($query, Get $get) {
-                    $currentId = $get('id');
-                    $currentSemester = $get('semester');
-
-                    // Filter hanya mata kuliah dari semester sebelumnya
-                    if ($currentSemester) {
-                        $query->where('semester', '<', $currentSemester);
-                    }
-
-                    // Exclude mata kuliah itu sendiri
-                    if ($currentId) {
-                        $query->where('id', '!=', $currentId);
-                    }
-
-                    // Filter berdasarkan major_id yang sama
-                    $majorId = $get('major_id');
-                    if ($majorId) {
-                        $query->where('major_id', $majorId);
-                    }
-                })
+                ->label('Prasyarat')
+                ->relationship('prerequisites', 'nama')
                 ->placeholder('Pilih mata kuliah prasyarat')
                 ->searchable()
                 ->preload()
                 ->helperText('Hanya mata kuliah dari semester sebelumnya yang dapat dipilih')
                 ->live()
-                ->afterStateUpdated(function ($state, Get $get, $set) {
-                    // Validasi circular dependency
+                ->afterStateUpdated(function ($state, Get $get) {
                     if (!empty($state)) {
                         $currentId = $get('id');
                         if ($currentId && self::hasCircularDependency($currentId, $state)) {
@@ -121,124 +92,80 @@ class MappingCourseResource extends Resource
     {
         return $table
             ->headerActions([
-                self::createTreeAction(
-                    'treeSI',
-                    '🌳 Tree SI',
-                    'success',
-                    'heroicon-o-academic-cap',
-                    'Struktur Prasyarat - Sistem Informasi',
-                    'Sistem Informasi'
-                ),
-                self::createTreeAction(
-                    'treeTI',
-                    '🌲 Tree TI',
-                    'info',
-                    'heroicon-o-globe-alt',
-                    'Struktur Prasyarat - Teknik Informatika',
-                    'Teknik Informatika'
-                ),
+                self::createTreeAction('treeSI', '🌳 Tree SI', 'success', 'heroicon-o-academic-cap', 'Struktur Prasyarat - Sistem Informasi', 'Sistem Informasi'),
+                self::createTreeAction('treeTI', '🌲 Tree TI', 'info', 'heroicon-o-globe-alt', 'Struktur Prasyarat - Teknik Informatika', 'Teknik Informatika'),
             ])
             ->columns([
-                Tables\Columns\TextColumn::make('major.name')
-                    ->label('Program Studi')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('kode')
-                    ->label('Kode')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('nama')
-                    ->label('Mata Kuliah')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('sks')
-                    ->label('SKS')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('semester')
-                    ->label('Semester')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('category.name')
-                    ->label('Kategori')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('major.name')->label('Program Studi')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('kode')->label('Kode')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('nama')->label('Mata Kuliah')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('sks')->label('SKS')->sortable(),
+                Tables\Columns\TextColumn::make('semester')->label('Semester')->sortable(),
+                Tables\Columns\TextColumn::make('category.name')->label('Kategori')->sortable(),
 
                 TagsColumn::make('prerequisites.nama')
                     ->label('Prasyarat')
+                    ->limit(99)
                     ->separator(', ')
-                    ->limit(3)
-                    ->sortable(),
+                    ->extraAttributes(['class' => 'whitespace-normal']),
+
+                TagsColumn::make('pl.description')
+                    ->label('PL')
+                    ->limit(99)
+                    ->separator(', ')
+                    ->extraAttributes(['class' => 'whitespace-normal']),
+
+                TagsColumn::make('cpl.description')
+                    ->label('CPL')
+                    ->limit(99)
+                    ->separator(', ')
+                    ->extraAttributes(['class' => 'whitespace-normal']),
+
+                TagsColumn::make('ik.description')
+                    ->label('IK')
+                    ->limit(99)
+                    ->separator(', ')
+                    ->extraAttributes(['class' => 'whitespace-normal']),
+
+                TagsColumn::make('cpmk.description')
+                    ->label('CPMK')
+                    ->limit(99)
+                    ->separator(', ')
+                    ->extraAttributes(['class' => 'whitespace-normal']),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('major_id')
-                    ->label('Program Studi')
-                    ->relationship('major', 'name'),
-
-                Tables\Filters\SelectFilter::make('semester')
-                    ->label('Semester')
-                    ->options([
-                        1 => 'Semester 1',
-                        2 => 'Semester 2',
-                        3 => 'Semester 3',
-                        4 => 'Semester 4',
-                        5 => 'Semester 5',
-                        6 => 'Semester 6',
-                        7 => 'Semester 7',
-                        8 => 'Semester 8',
-                    ]),
+                Tables\Filters\SelectFilter::make('major_id')->label('Program Studi')->relationship('major', 'name'),
+                Tables\Filters\SelectFilter::make('semester')->label('Semester')->options(array_combine(range(1,8), range(1,8))),
             ])
-            ->actions([
-                Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->actions([Actions\EditAction::make()])
+            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 
-    /**
-     * Helper method untuk membuat tree action tanpa duplikasi kode
-     */
-    protected static function createTreeAction(
-        string $name,
-        string $label,
-        string $color,
-        string $icon,
-        string $heading,
-        ?string $majorName = null
-    ): Tables\Actions\Action {
+    protected static function createTreeAction(string $name, string $label, string $color, string $icon, string $heading, ?string $majorName = null): Tables\Actions\Action
+    {
         return Tables\Actions\Action::make($name)
             ->label($label)
             ->color($color)
             ->icon($icon)
             ->modalHeading($heading)
             ->modalContent(function () use ($majorName, $heading) {
-                $query = Course::query()
-                    ->with(['prerequisites' => function ($query) {
-                        $query->select('courses.id', 'courses.kode', 'courses.nama', 'courses.sks', 'courses.semester');
-                    }]);
+                $query = Course::with(['major:id,name', 'prerequisites:id,kode,nama,semester,sks', 'pl', 'cpl', 'ik', 'cpmk']);
+                if ($majorName) $query->whereHas('major', fn($q) => $q->where('name', $majorName));
+                $courses = $query->get(['id','kode','nama','semester','sks','major_id']);
 
-                if ($majorName) {
-                    $query->whereHas('major', fn($q) => $q->where('name', $majorName));
-                }
-
-                $courses = $query->get(['id', 'kode', 'nama', 'sks', 'semester']);
-
-                // Pre-process data di server side
-                $processedData = $courses->map(function ($course) {
-                    return [
-                        'id' => $course->id,
-                        'kode' => $course->kode,
-                        'nama' => $course->nama,
-                        'sks' => $course->sks ?? '?',
-                        'semester' => $course->semester ?? '?',
-                        'prerequisites' => $course->prerequisites->pluck('id')->toArray(),
-                    ];
-                });
+                $processedData = $courses->map(fn($course) => [
+                    'id' => $course->id,
+                    'kode' => $course->kode,
+                    'nama' => $course->nama,
+                    'sks' => $course->sks ?? '?',
+                    'semester' => $course->semester ?? '?',
+                    'major' => $course->major->name ?? '-',
+                    'prerequisites' => $course->prerequisites->pluck('id')->toArray(),
+                    'pl' => $course->pl->map(fn($x) => ['description' => $x->description])->all(),
+                    'cpl' => $course->cpl->map(fn($x) => ['description' => $x->description])->all(),
+                    'ik' => $course->ik->map(fn($x) => ['description' => $x->description])->all(),
+                    'cpmk' => $course->cpmk->map(fn($x) => ['description' => $x->description])->all(),
+                ]);
 
                 return view('filament.custom.course-tree-blade-only', [
                     'title' => $heading,
@@ -248,39 +175,28 @@ class MappingCourseResource extends Resource
             ->modalWidth('full');
     }
 
-    /**
-     * Check circular dependency
-     * Fungsi rekursif untuk mengecek apakah ada circular dependency
-     */
     protected static function hasCircularDependency(int $courseId, array $prerequisiteIds, array $visited = []): bool
     {
-        if (in_array($courseId, $visited)) {
-            return true; // Circular dependency detected
-        }
-
+        if (in_array($courseId, $visited)) return true;
         $visited[] = $courseId;
 
         foreach ($prerequisiteIds as $prereqId) {
-            $course = Course::with('prerequisites')->find($prereqId);
-
+            $course = Course::with('prerequisites:id')->find($prereqId);
             if ($course && $course->prerequisites->isNotEmpty()) {
-                $nextPrereqIds = $course->prerequisites->pluck('id')->toArray();
-
-                if (self::hasCircularDependency($courseId, $nextPrereqIds, $visited)) {
+                if (self::hasCircularDependency($courseId, $course->prerequisites->pluck('id')->toArray(), $visited)) {
                     return true;
                 }
             }
         }
-
         return false;
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListMappingCourses::route('/'),
+            'index' => Pages\ListMappingCourses::route('/'),
             'create' => Pages\CreateMappingCourse::route('/create'),
-            'edit'   => Pages\EditMappingCourse::route('/{record}/edit'),
+            'edit' => Pages\EditMappingCourse::route('/{record}/edit'),
         ];
     }
 }

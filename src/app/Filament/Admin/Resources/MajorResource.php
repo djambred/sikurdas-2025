@@ -36,6 +36,9 @@ class MajorResource extends Resource
                 Forms\Components\Select::make('faculty_id')
                     ->relationship('faculty', 'name')
                     ->required(),
+                Forms\Components\Select::make('lecture_id')
+                    ->relationship('lecture', 'name')
+                    ->required(),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
@@ -56,6 +59,9 @@ class MajorResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('faculty.name')
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('lecture.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')

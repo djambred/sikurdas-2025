@@ -6,56 +6,66 @@ use Illuminate\Http\Request;
 use App\Models\Course;
 use App\Models\Major;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str; // Tambahkan ini
 
 class CourseTreeExportController extends Controller
 {
     /**
      * Export PDF - semua course atau per major (opsional).
-     *
-     * URL Contoh:
-     * - /course-tree/pdf                → semua major
-     * - /course-tree/pdf?major=3        → berdasarkan ID major
-     * - /course-tree/pdf?major=Informatika → berdasarkan nama major
      */
     public function exportPdf(Request $request)
     {
         $majorParam = $request->query('major');
+        $major = null;
+        $title = 'Struktur Mata Kuliah';
+
+        // Relasi dasar yang dibutuhkan untuk Course
+        $relations = ['prerequisites', 'pl', 'cpl', 'ik', 'cpmk'];
 
         if ($majorParam !== null && $majorParam !== '') {
-            // Bisa ID atau nama
+            // Mode filter per Major
             if (is_numeric($majorParam)) {
                 $major = Major::find((int)$majorParam);
             } else {
-                $major = Major::where('name', $majorParam)->first();
+                // Mencari berdasarkan slug atau nama parsial
+                $major = Major::where('name', 'LIKE', '%' . $majorParam . '%')->first();
             }
 
             if (!$major) {
                 abort(404, 'Program Studi (major) tidak ditemukan.');
             }
 
-            // Ambil course per major
             $courses = Course::where('major_id', $major->id)
-                ->with('prerequisites')
+                // Di mode filter, relasi major tidak perlu di-load karena sudah pasti
+                ->with($relations)
                 ->orderBy('semester', 'asc')
                 ->get();
 
-            $title = 'Struktur Mata Kuliah — ' . $major->name;
+            $title .= ' — ' . $major->name;
         } else {
-            // Semua major
-            $courses = Course::with('major', 'prerequisites')
+            // Mode Semua Program Studi
+            // WAJIB load relasi 'major' agar grouping di Blade bekerja
+            $courses = Course::with(array_merge($relations, ['major']))
                 ->orderBy('major_id')
                 ->orderBy('semester', 'asc')
                 ->get();
 
-            $title = 'Struktur Mata Kuliah — Semua Program Studi';
+            // Tambahkan detail jumlah Major yang unik (untuk menarik)
+            $majorCount = $courses->pluck('major.name')->filter()->unique()->count();
+
+            $title .= ' — Semua Program Studi (' . $majorCount . ' Major)';
             $major = null;
         }
+
+        // --- PDF OPTIONS ---
         Pdf::setOptions([
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => true,
-            'defaultFont' => 'DejaVu Sans', // font yang umumnya mendukung Unicode
+            // Pastikan font mendukung karakter non-latin
+            'defaultFont' => 'DejaVu Sans',
+            'chroot' => public_path(),
         ]);
-        // === Render ke PDF ===
+
         $pdf = Pdf::loadView('filament.custom.course-tree-blade-only', [
             'title'   => $title,
             'courses' => $courses,
@@ -63,28 +73,30 @@ class CourseTreeExportController extends Controller
             'major'   => $major,
         ]);
 
-        // 📄 Atur orientasi ke landscape
         $pdf->setPaper('a4', 'landscape');
 
-        // Nama file dinamis
-        $filename = 'mapping-mata-kuliah' . ($major ? '-' . \Str::slug($major->name) : '-all') . '.pdf';
+        // --- NAMA FILE YANG LEBIH BAIK ---
+        // Gunakan Str::slug dari Illuminate\Support\Str
+        $filename = 'struktur-mata-kuliah' . ($major ? '-' . Str::slug($major->name) : '-all') . '.pdf';
 
         return $pdf->download($filename);
     }
 
     /**
      * Preview HTML (opsional).
-     * Bisa juga gunakan ?major=... untuk filter.
      */
     public function preview(Request $request)
     {
         $majorParam = $request->query('major');
+        $major = null;
+
+        $relations = ['prerequisites', 'pl', 'cpl', 'ik', 'cpmk'];
 
         if ($majorParam !== null && $majorParam !== '') {
             if (is_numeric($majorParam)) {
                 $major = Major::find((int)$majorParam);
             } else {
-                $major = Major::where('name', $majorParam)->first();
+                $major = Major::where('name', 'LIKE', '%' . $majorParam . '%')->first();
             }
 
             if (!$major) {
@@ -92,13 +104,13 @@ class CourseTreeExportController extends Controller
             }
 
             $courses = Course::where('major_id', $major->id)
-                ->with('prerequisites')
+                ->with($relations)
                 ->orderBy('semester', 'asc')
                 ->get();
 
             $title = 'Preview: Struktur Mata Kuliah — ' . $major->name;
         } else {
-            $courses = Course::with('major', 'prerequisites')
+            $courses = Course::with(array_merge($relations, ['major']))
                 ->orderBy('major_id')
                 ->orderBy('semester', 'asc')
                 ->get();

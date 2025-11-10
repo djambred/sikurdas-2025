@@ -15,6 +15,11 @@ class Major extends Model
         return $this->belongsTo(Faculty::class);
     }
 
+    public function lecture() :BelongsTo
+    {
+        return $this->belongsTo(Lecture::class);
+    }
+
     public function courses(): HasMany
     {
         return $this->hasMany(Course::class);

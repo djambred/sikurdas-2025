@@ -5,6 +5,9 @@ use Livewire\Livewire;
 use App\Http\Controllers\CourseTreeExportController;
 use App\Http\Controllers\RpsExportController;
 use App\Models\Rps;
+use App\Models\MappingPLtoCPL;
+use App\Models\GraduateProfile;
+use App\Models\LearningOutcome;
 
 
 /* NOTE: Do Not Remove
@@ -37,3 +40,10 @@ Route::get('/rps/{rps}/preview', function (Rps $rps) {
 })->name('rps.preview');
 
 Route::get('/rps/{rps}/export', [RpsExportController::class, 'export'])->name('rps.export');
+
+Route::get('/admin/mapping/preview', function () {
+    $profiles = GraduateProfile::all();
+    $outcomes = LearningOutcome::all();
+    $relations = MappingPLtoCPL::all();
+    return view('pdf.mapping_preview', compact('profiles', 'outcomes', 'relations'));
+})->name('mapping.preview');

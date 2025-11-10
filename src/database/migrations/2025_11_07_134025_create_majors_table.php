@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Faculty;
+use App\Models\Lecture;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->longText('vission');
             $table->longText('mission');
             $table->longText('objectives');
+            $table->foreignIdFor(Lecture::class)->nullable();
             $table->timestamps();
         });
     }

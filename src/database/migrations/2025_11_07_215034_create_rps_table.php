@@ -6,61 +6,46 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
+        // Ganti Schema::table() menjadi Schema::create()
         Schema::create('rps', function (Blueprint $table) {
             $table->id();
 
-            // FK to Major (program studi)
-            $table->foreignId('major_id')->constrained('majors')->cascadeOnDelete();
+            // --- Foreign Keys (diambil dari RpsResource dan Rps Model) ---
+            $table->foreignId('major_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('course_id')->nullable()->constrained()->onDelete('set null');
 
-            // FK to Course (mata kuliah)
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
+            // --- Identitas Mata Kuliah (Sesuai yang ingin Anda tambahkan) ---
+            $table->string('kode', 50)->nullable();
+            $table->string('nama')->nullable();
+            $table->integer('sks')->nullable();
+            $table->integer('semester')->nullable();
+            $table->longText('deskripsi_singkat')->nullable();
+            $table->integer('revisi')->default(1); // Revisi dinaikkan ke atas agar lebih terstruktur
 
-            // basic metadata
-            $table->string('kode');
-            $table->string('nama');
-            $table->integer('sks');
-            $table->integer('semester');
-
-            // Tambahan field untuk otorisasi dan informasi lain
-            $table->string('penyusun'); // sekarang menyimpan nama, bukan ID
-            $table->string('koordinator_rps')->nullable();
-            $table->string('ketua_prodi')->nullable();
-            $table->string('dosen_pengampu')->nullable();
-            $table->date('tanggal_penyusunan');
-            $table->integer('revisi')->default(1);
-
-            // Deskripsi
-            $table->text('deskripsi_singkat')->nullable();
-
-            // content stored as JSON (easiest integration with Filament Repeater)
+            // --- Konten RPS (JSON Casted) ---
             $table->json('weekly_plan')->nullable();
             $table->json('assessment')->nullable();
             $table->json('references')->nullable();
 
-            // Field untuk multiple selection CPMK dan Sub-CPMK
-            $table->json('existing_cpmks')->nullable();
-            $table->json('existing_sub_cpmks')->nullable();
+            // --- Otorisasi (Foreign Keys ke tabel 'lectures') ---
+            $table->foreignId('penyusun_id')->nullable()->constrained('lectures')->onDelete('set null');
+            $table->foreignId('koordinator_rps_id')->nullable()->constrained('lectures')->onDelete('set null');
+            $table->foreignId('ketua_prodi_id')->nullable()->constrained('lectures')->onDelete('set null');
 
-            // optional academic info
-            $table->string('academic_year')->nullable();
-            $table->enum('status', ['draft','review','approved','rejected'])->default('draft');
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('approved_at')->nullable();
-            $table->integer('version')->default(1);
-
-            // misc
-            $table->text('approval_notes')->nullable();
-            $table->json('meta')->nullable();
+            $table->date('tanggal_penyusunan')->nullable();
 
             $table->timestamps();
-
-            $table->index(['major_id', 'course_id', 'status']);
-            $table->index(['kode', 'semester']);
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('rps');
