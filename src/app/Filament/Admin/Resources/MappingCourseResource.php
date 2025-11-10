@@ -12,7 +12,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions;
 use App\Filament\Admin\Resources\MappingCourseResource\Pages;
-use Filament\Tables\Columns\TagsColumn;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 
@@ -35,112 +34,205 @@ class MappingCourseResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('major_id')
-                ->label('Program Studi')
-                ->relationship('major', 'name')
-                ->options(Major::pluck('name', 'id'))
-                ->disabled(fn(string $operation) => $operation !== 'create')
-                ->required(),
+            Forms\Components\Section::make('Informasi Mata Kuliah')
+                ->schema([
+                    Forms\Components\Select::make('major_id')
+                        ->label('Program Studi')
+                        ->relationship('major', 'name')
+                        ->options(Major::pluck('name', 'id'))
+                        ->disabled(fn(string $operation) => $operation !== 'create')
+                        ->required(),
 
-            Forms\Components\TextInput::make('nama')
-                ->label('Nama Mata Kuliah')
-                ->disabled()
-                ->dehydrated(false),
+                    Forms\Components\TextInput::make('nama')
+                        ->label('Nama Mata Kuliah')
+                        ->disabled()
+                        ->dehydrated(false),
 
-            Forms\Components\Select::make('category_id')
-                ->label('Kategori')
-                ->options(Category::pluck('name', 'id'))
-                ->searchable()
-                ->required(),
+                    Forms\Components\TextInput::make('kode')
+                        ->label('Kode Mata Kuliah')
+                        ->disabled()
+                        ->dehydrated(false),
 
-            Forms\Components\MultiSelect::make('prerequisites')
-                ->label('Prasyarat')
-                ->relationship('prerequisites', 'nama')
-                ->placeholder('Pilih mata kuliah prasyarat')
-                ->searchable()
-                ->preload()
-                ->helperText('Hanya mata kuliah dari semester sebelumnya yang dapat dipilih')
-                ->live()
-                ->afterStateUpdated(function ($state, Get $get) {
-                    if (!empty($state)) {
-                        $currentId = $get('id');
-                        if ($currentId && self::hasCircularDependency($currentId, $state)) {
-                            Notification::make()
-                                ->title('Peringatan')
-                                ->body('Terdeteksi circular dependency. Silakan periksa kembali prasyarat.')
-                                ->warning()
-                                ->send();
-                        }
-                    }
-                }),
+                    Forms\Components\TextInput::make('sks')
+                        ->numeric()
+                        ->label('Jumlah SKS')
+                        ->disabled()
+                        ->dehydrated(false),
 
-            Forms\Components\TextInput::make('sks')
-                ->numeric()
-                ->label('Jumlah SKS')
-                ->disabled()
-                ->dehydrated(false),
+                    Forms\Components\TextInput::make('semester')
+                        ->numeric()
+                        ->label('Semester')
+                        ->disabled()
+                        ->dehydrated(false),
 
-            Forms\Components\TextInput::make('semester')
-                ->numeric()
-                ->label('Semester')
-                ->disabled()
-                ->dehydrated(false),
+                    Forms\Components\Select::make('category_id')
+                        ->label('Kategori')
+                        ->options(Category::pluck('name', 'id'))
+                        ->searchable()
+                        ->required(),
+                ])
+                ->columns(3),
+
+            Forms\Components\Section::make('Relasi & Mapping Outcome')
+                ->schema([
+                    Forms\Components\MultiSelect::make('pl')
+                        ->label('PL (Program Learning)')
+                        ->relationship('pl', 'description')
+                        ->preload()
+                        ->searchable()
+                        ->helperText('Pilih PL yang relevan. Ketik untuk mencari.'),
+
+                    Forms\Components\MultiSelect::make('cpl')
+                        ->label('CPL (Capaian Pembelajaran Lulusan)')
+                        ->relationship('cpl', 'description')
+                        ->preload()
+                        ->searchable()
+                        ->helperText('Pilih CPL terkait (bisa lebih dari satu).'),
+
+                    Forms\Components\MultiSelect::make('ik')
+                        ->label('IK (Indikator Kinerja)')
+                        ->relationship('ik', 'description')
+                        ->preload()
+                        ->searchable()
+                        ->helperText('Pilih indikator kinerja yang relevan.'),
+
+                    Forms\Components\MultiSelect::make('cpmk')
+                        ->label('CPMK (Learning Outcomes Mata Kuliah)')
+                        ->relationship('cpmk', 'description')
+                        ->preload()
+                        ->searchable()
+                        ->helperText('Pilih CPMK yang di-mapping ke mata kuliah ini.'),
+
+                    Forms\Components\MultiSelect::make('prerequisites')
+                        ->label('Prasyarat')
+                        ->relationship('prerequisites', 'nama')
+                        ->placeholder('Pilih mata kuliah prasyarat')
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Hanya mata kuliah dari semester sebelumnya yang dapat dipilih.')
+                        ->live()
+                        ->afterStateUpdated(function ($state, Get $get) {
+                            if (!empty($state)) {
+                                $currentId = $get('id');
+                                if ($currentId && self::hasCircularDependency($currentId, $state)) {
+                                    Notification::make()
+                                        ->title('Peringatan')
+                                        ->body('Terdeteksi circular dependency. Silakan periksa kembali prasyarat.')
+                                        ->warning()
+                                        ->send();
+                                }
+                            }
+                        })
+                        ->columnSpan('full'),
+                ])
+                ->columns(2),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->headerActions([
-                self::createTreeAction('treeSI', '🌳 Tree SI', 'success', 'heroicon-o-academic-cap', 'Struktur Prasyarat - Sistem Informasi', 'Sistem Informasi'),
-                self::createTreeAction('treeTI', '🌲 Tree TI', 'info', 'heroicon-o-globe-alt', 'Struktur Prasyarat - Teknik Informatika', 'Teknik Informatika'),
-            ])
-            ->columns([
-                Tables\Columns\TextColumn::make('major.name')->label('Program Studi')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('kode')->label('Kode')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('nama')->label('Mata Kuliah')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('sks')->label('SKS')->sortable(),
-                Tables\Columns\TextColumn::make('semester')->label('Semester')->sortable(),
-                Tables\Columns\TextColumn::make('category.name')->label('Kategori')->sortable(),
+       return $table
+        ->headerActions([
+            self::createTreeAction('treeSI', '🌳 Tree SI', 'success', 'heroicon-o-academic-cap', 'Struktur Prasyarat - Sistem Informasi', 'Sistem Informasi'),
+            self::createTreeAction('treeTI', '🌲 Tree TI', 'info', 'heroicon-o-globe-alt', 'Struktur Prasyarat - Teknik Informatika', 'Teknik Informatika'),
+        ])
+        ->columns([
+            Tables\Columns\TextColumn::make('major.name')
+                ->label('Program Studi')
+                ->sortable()
+                ->searchable(),
 
-                TagsColumn::make('prerequisites.nama')
-                    ->label('Prasyarat')
-                    ->limit(99)
-                    ->separator(', ')
-                    ->extraAttributes(['class' => 'whitespace-normal']),
+            Tables\Columns\TextColumn::make('kode')
+                ->label('Kode')
+                ->sortable()
+                ->searchable(),
 
-                TagsColumn::make('pl.description')
-                    ->label('PL')
-                    ->limit(99)
-                    ->separator(', ')
-                    ->extraAttributes(['class' => 'whitespace-normal']),
+            Tables\Columns\TextColumn::make('nama')
+                ->label('Mata Kuliah')
+                ->sortable()
+                ->searchable()
+                ->wrap(),
 
-                TagsColumn::make('cpl.description')
-                    ->label('CPL')
-                    ->limit(99)
-                    ->separator(', ')
-                    ->extraAttributes(['class' => 'whitespace-normal']),
+            Tables\Columns\TextColumn::make('sks')
+                ->label('SKS')
+                ->sortable(),
 
-                TagsColumn::make('ik.description')
-                    ->label('IK')
-                    ->limit(99)
-                    ->separator(', ')
-                    ->extraAttributes(['class' => 'whitespace-normal']),
+            Tables\Columns\TextColumn::make('semester')
+                ->label('Semester')
+                ->sortable(),
 
-                TagsColumn::make('cpmk.description')
-                    ->label('CPMK')
-                    ->limit(99)
-                    ->separator(', ')
-                    ->extraAttributes(['class' => 'whitespace-normal']),
-            ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('major_id')->label('Program Studi')->relationship('major', 'name'),
-                Tables\Filters\SelectFilter::make('semester')->label('Semester')->options(array_combine(range(1,8), range(1,8))),
-            ])
-            ->actions([Actions\EditAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
-    }
+            Tables\Columns\TextColumn::make('category.name')
+                ->label('Kategori')
+                ->sortable(),
 
+            // ✅ Prasyarat
+            Tables\Columns\TextColumn::make('prerequisites')
+                ->label('Prasyarat')
+                ->formatStateUsing(fn($record) =>
+                    $record->prerequisites && $record->prerequisites->count() > 0
+                        ? $record->prerequisites->pluck('nama')->implode(', ')
+                        : '-'
+                )
+                ->wrap()
+                ->extraAttributes(['style' => 'white-space: normal; max-width: 300px;']),
+
+            // ✅ PL
+            Tables\Columns\TextColumn::make('pl')
+                ->label('PL')
+                ->formatStateUsing(fn($record) =>
+                    $record->pl && $record->pl->count() > 0
+                        ? $record->pl->pluck('description')->implode(', ')
+                        : '-'
+                )
+                ->wrap()
+                ->extraAttributes(['style' => 'white-space: normal; max-width: 400px;']),
+
+            // ✅ CPL
+            Tables\Columns\TextColumn::make('cpl')
+                ->label('CPL')
+                ->formatStateUsing(fn($record) =>
+                    $record->cpl && $record->cpl->count() > 0
+                        ? $record->cpl->pluck('description')->implode(', ')
+                        : '-'
+                )
+                ->wrap()
+                ->extraAttributes(['style' => 'white-space: normal; max-width: 400px;']),
+
+            // ✅ IK
+            Tables\Columns\TextColumn::make('ik')
+                ->label('IK')
+                ->formatStateUsing(fn($record) =>
+                    $record->ik && $record->ik->count() > 0
+                        ? $record->ik->pluck('description')->implode(', ')
+                        : '-'
+                )
+                ->wrap()
+                ->extraAttributes(['style' => 'white-space: normal; max-width: 400px;']),
+
+            // ✅ CPMK
+            Tables\Columns\TextColumn::make('cpmk')
+                ->label('CPMK')
+                ->formatStateUsing(fn($record) =>
+                    $record->cpmk && $record->cpmk->count() > 0
+                        ? $record->cpmk->pluck('description')->implode(', ')
+                        : '-'
+                )
+                ->wrap()
+                ->extraAttributes(['style' => 'white-space: normal; max-width: 400px;']),
+        ])
+        ->filters([
+            Tables\Filters\SelectFilter::make('major_id')->label('Program Studi')->relationship('major', 'name'),
+            Tables\Filters\SelectFilter::make('semester')->label('Semester')->options(array_combine(range(1,8), range(1,8))),
+        ])
+        ->actions([
+            Actions\EditAction::make(),
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]),
+        ]);
+}
     protected static function createTreeAction(string $name, string $label, string $color, string $icon, string $heading, ?string $majorName = null): Tables\Actions\Action
     {
         return Tables\Actions\Action::make($name)
